@@ -223,7 +223,7 @@ class SteamClient:
         return items
 
     @login_required
-    def accept_trade_offer(self, trade_offer_id: str) -> dict:
+    def accept_trade_offer(self, trade_offer_id: str, allow_2fa=False) -> dict:
         trade = self.get_trade_offer(trade_offer_id)
         trade_offer_state = TradeOfferState(trade['response']['offer']['trade_offer_state'])
         if trade_offer_state is not TradeOfferState.Active:
@@ -240,7 +240,7 @@ class SteamClient:
         headers = {'Referer': self._get_trade_offer_url(trade_offer_id)}
         response = self._session.post(accept_url, data=params, headers=headers).json()
         # if response.get('needs_mobile_confirmation', False):
-        if 'needs_mobile_confirmation' in response:
+        if allow_2fa and 'needs_mobile_confirmation' in response:
             return self._confirm_transaction(trade_offer_id)
         return response
 
