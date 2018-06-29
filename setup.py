@@ -4,11 +4,11 @@ import sys
 if not sys.version_info[0] == 3 and sys.version_info[1] < 5:
     sys.exit('Python < 3.5 is not supported')
 
-version = '0.01'
+version = '0.2'
 
 setup(
     name='steampy_by_eshao_for_fun',
-    packages=['steampy', 'test', 'examples', ],
+    packages=['steampy'],
     version=version,
     description='A Steam lib for trade automation',
     author='Eshao',
