@@ -10,4 +10,4 @@ dist
 debug.*
 deploy.sh
 __pycache__
-my_pro/
+eshao/
