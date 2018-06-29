@@ -4,15 +4,16 @@ from typing import List
 import json
 import requests
 from steampy import guard
-from steampy.chat import SteamChat
+# from steampy.chat import SteamChat
 from steampy.confirmation import ConfirmationExecutor
 from steampy.exceptions import SevenDaysHoldException, LoginRequired, ApiException
 from steampy.login import LoginExecutor, InvalidCredentials
-from steampy.market import SteamMarket
+# from steampy.market import SteamMarket
 from steampy.models import Asset, TradeOfferState, SteamUrl, GameOptions
 from steampy.utils import text_between, texts_between, merge_items_with_descriptions_from_inventory, \
     steam_id_to_account_id, merge_items_with_descriptions_from_offers, get_description_key, \
-    merge_items_with_descriptions_from_offer, account_id_to_steam_id, get_key_value_from_url
+    merge_items_with_descriptions_from_offer, account_id_to_steam_id, get_key_value_from_url, \
+    merge_items_with_descriptions_by_eshao
 
 
 def login_required(func):
@@ -32,16 +33,18 @@ class SteamClient:
         self.steam_guard = None
         self.was_login_executed = False
         self.username = None
-        self.market = SteamMarket(self._session)
-        self.chat = SteamChat(self._session)
+        # self.market = SteamMarket(self._session)
+        # self.chat = SteamChat(self._session)
+        self._session.headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'}
 
     def login(self, username: str, password: str, steam_guard: str) -> None:
         self.steam_guard = guard.load_steam_guard(steam_guard)
         self.username = username
         LoginExecutor(username, password, self.steam_guard['shared_secret'], self._session).login()
         self.was_login_executed = True
-        self.market._set_login_executed(self.steam_guard, self._get_session_id())
-        self.chat._login()
+        # self.market._set_login_executed(self.steam_guard, self._get_session_id())
+        # self.chat._login()
 
     @login_required
     def logout(self) -> None:
@@ -51,7 +54,7 @@ class SteamClient:
         if self.is_session_alive():
             raise Exception("Logout unsuccessful")
         self.was_login_executed = False
-        self.chat._logout()
+        # self.chat._logout()
 
     @login_required
     def is_session_alive(self):
@@ -75,6 +78,29 @@ class SteamClient:
         msg = 'Access is denied. Retrying will not help. Please verify your <pre>key=</pre> parameter'
         return msg in response.text
 
+    # @login_required
+    # def get_partner_inventory(self, trade_url: str, game: GameOptions, merge: bool = True):
+    #     import re
+    #     short_id = re.search(r'partner=(\d+)', trade_url).group(1)
+    #     partner_id = int(short_id) + 76561197960265728
+    #
+    #     url = SteamUrl.COMMUNITY_URL + '/tradeoffer/new/partnerinventory/' + \
+    #           '?sessionid={}&partner={}&appid={}&contextid={}'.format(
+    #               self._get_session_id(),
+    #               partner_id,
+    #               game.app_id,
+    #               game.context_id
+    #           )
+    #     head = {
+    #         'Referer': trade_url,
+    #         'X-Prototype-Version': '1.7',
+    #         'X-Requested-With': 'XMLHttpRequest',
+    #     }
+    #     response_dict = self._session.get(url, headers=head).json()
+    #     if merge:
+    #         return merge_items_with_descriptions_from_inventory(response_dict, game)
+    #     return response_dict
+
     @login_required
     def get_my_inventory(self, game: GameOptions, merge: bool = True) -> dict:
         url = SteamUrl.COMMUNITY_URL + '/my/inventory/json/' + \
@@ -84,6 +110,28 @@ class SteamClient:
         if merge:
             return merge_items_with_descriptions_from_inventory(response_dict, game)
         return response_dict
+
+    @login_required
+    def get_my_inventory_by_eshao(self, game: GameOptions, merge: bool = True) -> dict:
+        count = 150
+        start_assetid = ''
+        result = []
+        while True:
+            url = SteamUrl.COMMUNITY_URL + '/inventory/' + \
+                  self.steam_guard['steamid'] + '/' + \
+                  game.app_id + '/' + \
+                  game.context_id + '?count={}'.format(count)
+            url = url + '&start_assetid={}'.format(start_assetid) if start_assetid else url
+            response_dict = self._session.get(url).json()
+            if merge:
+                result += merge_items_with_descriptions_by_eshao(response_dict)
+            else:
+                result += response_dict['assets']
+
+            if 'last_assetid' in response_dict.keys():
+                start_assetid = response_dict['last_assetid']
+            else:
+                return result
 
     @login_required
     def get_partner_inventory(self, partner_steam_id: str, game: GameOptions, merge: bool = True) -> dict:
@@ -191,7 +239,8 @@ class SteamClient:
                   'captcha': ''}
         headers = {'Referer': self._get_trade_offer_url(trade_offer_id)}
         response = self._session.post(accept_url, data=params, headers=headers).json()
-        if response.get('needs_mobile_confirmation', False):
+        # if response.get('needs_mobile_confirmation', False):
+        if 'needs_mobile_confirmation' in response:
             return self._confirm_transaction(trade_offer_id)
         return response
 
@@ -247,7 +296,7 @@ class SteamClient:
         data = response.json()
         return data['response']['players'][0]
 
-    def get_friend_list(self, steam_id: str, relationship_filter: str="all") -> dict:
+    def get_friend_list(self, steam_id: str, relationship_filter: str = "all") -> dict:
         params = {
             'key': self._api_key,
             'steamid': steam_id,
@@ -261,7 +310,7 @@ class SteamClient:
     def _create_offer_dict(items_from_me: List[Asset], items_from_them: List[Asset]) -> dict:
         return {
             'newversion': True,
-            'version': 4,
+            'version': 2,
             'me': {
                 'assets': [asset.to_dict() for asset in items_from_me],
                 'currency': [],
@@ -313,3 +362,11 @@ class SteamClient:
     @staticmethod
     def _get_trade_offer_url(trade_offer_id: str) -> str:
         return SteamUrl.COMMUNITY_URL + '/tradeoffer/' + trade_offer_id
+
+    @login_required
+    def check_bot_is_ban(self, trade_url):
+        resp = self._session.get(trade_url)
+        if 'error_msg' in resp.text:
+            return True
+        else:
+            return False

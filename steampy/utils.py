@@ -50,6 +50,19 @@ def merge_items_with_descriptions_from_inventory(inventory_response: dict, game:
     return merge_items(inventory, descriptions, context_id=game.context_id)
 
 
+def merge_items_with_descriptions_by_eshao(inventory_response: dict) -> list:
+    import pandas as pd
+
+    inventory = inventory_response['assets']
+    descriptions = inventory_response['descriptions']
+    df = pd.DataFrame(descriptions)
+    for i in inventory:
+        index = df[(df.classid == i['classid']) & (df.instanceid == i['instanceid'])].index[0]
+        i.update(descriptions[index])
+
+    return inventory
+
+
 def merge_items_with_descriptions_from_offers(offers_response: dict) -> dict:
     descriptions = {get_description_key(offer): offer for offer in offers_response['response'].get('descriptions', [])}
     received_offers = offers_response['response'].get('trade_offers_received', [])

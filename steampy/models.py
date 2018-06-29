@@ -56,6 +56,7 @@ class SteamUrl:
     API_URL = "https://api.steampowered.com"
     COMMUNITY_URL = "https://steamcommunity.com"
 
+
 class Endpoints:
     CHAT_LOGIN = SteamUrl.API_URL + "/ISteamWebUserPresenceOAuth/Logon/v1"
     SEND_MESSAGE = SteamUrl.API_URL + "/ISteamWebUserPresenceOAuth/Message/v1"
