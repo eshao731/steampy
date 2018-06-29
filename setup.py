@@ -15,7 +15,7 @@ setup(
     author_email='46996302@qq.com',
     license='MIT',
     url='https://github.com/eshao731/steampy',
-    keywords=['steam', 'trade', ],
+    keywords=['steam', 'trade'],
     classifiers=[],
     install_requires=[
         "requests",
