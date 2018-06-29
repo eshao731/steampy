@@ -4,18 +4,17 @@ import sys
 if not sys.version_info[0] == 3 and sys.version_info[1] < 5:
     sys.exit('Python < 3.5 is not supported')
 
-version = '0.51'
+version = '0.01'
 
 setup(
-    name='steampy',
+    name='steampy_by_eshao_for_fun',
     packages=['steampy', 'test', 'examples', ],
     version=version,
     description='A Steam lib for trade automation',
-    author='Michał Bukowski',
-    author_email='gigibukson@gmail.com',
+    author='Eshao',
+    author_email='46996302@qq.com',
     license='MIT',
-    url='https://github.com/bukson/steampy',
-    download_url='https://github.com/bukson/steampy/tarball/' + version,
+    url='https://github.com/eshao731/steampy',
     keywords=['steam', 'trade', ],
     classifiers=[],
     install_requires=[
