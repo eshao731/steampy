@@ -11,7 +11,7 @@ class BotTrade:
         self.psw = col['password']
         self.apikey = col['dev_key']
         self.guard_info = {
-            "steamid": str(col['SteamID']),
+            "steamid": str(col['steam_id']),
             "shared_secret": col['configs']['shared_secret'],
             "identity_secret": col['configs']['identity_secret'],
         }
